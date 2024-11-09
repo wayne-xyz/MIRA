@@ -14,7 +14,7 @@ struct MIRAApp: App {
 
     var body: some Scene {
         WindowGroup {
-            SpeechRecognitionTestView() // Change to starting view (useful for testing)
+            GeminiTestView() // Change to starting view (useful for testing)
                 .environment(appModel)
         }
 
