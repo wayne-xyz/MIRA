@@ -3,5 +3,5 @@ MIRA
 
 ## Update Log
 
-- [ ] Speech to Text
+- [X] Speech to Text
 - [ ] Text to speech
