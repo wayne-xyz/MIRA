@@ -3,7 +3,7 @@
 //  MIRA
 //
 //  Created by Rongwei Ji on 11/9/24.
-// Example of using the code for first page 
+// Example of using the code for first page
 
 import SwiftUI
 import RealityKit
