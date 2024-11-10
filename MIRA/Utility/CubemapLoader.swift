@@ -37,6 +37,7 @@ class CubemapLoader {
         let cubeSize: Float = 1000 // Adjust size as needed for immersion
         let cubeMesh = MeshResource.generateBox(size: cubeSize)
         
+        print("Geting the materials... ")
         // Create the material for each face
         let materials = [
             createMaterial(imageName: "cube_front"),
@@ -46,6 +47,7 @@ class CubemapLoader {
             createMaterial(imageName: "cube_up"),
             createMaterial(imageName: "cube_down")
         ]
+        print("Number of materials created: \(materials.count)")
         
         // Create the model entity for the cube
         let cubeEntity = ModelEntity(mesh: cubeMesh, materials: materials)
@@ -64,7 +66,11 @@ class CubemapLoader {
         
         // Use an unlit material so the images are clearly visible without lighting
         var material = UnlitMaterial()
-        material.color = .init(tint: .white, texture: textureImage.toMaterialParametersTexture())
+        if let texture = textureImage.toMaterialParametersTexture() {
+            material.color = .init(tint: .white, texture: texture)
+        } else {
+            print("⚠️ Failed to create texture for: \(imageName)")
+        }
         
         return material
     }

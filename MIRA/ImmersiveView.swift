@@ -11,6 +11,7 @@ import RealityKitContent
 
 struct ImmersiveView: View {
     
+    
     var body: some View {
         RealityView { content in
             
@@ -46,7 +47,15 @@ struct ImmersiveView: View {
 //                }
 //            }
         }
+        .onAppear() {
+//
+            onAppearFunction()
+        }
     }
+}
+
+func onAppearFunction(){
+    print("Immersive view onAppear")
 }
 
 #Preview(immersionStyle: .mixed) {
