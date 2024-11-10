@@ -6,7 +6,7 @@ class ConversationManager: NSObject, SFSpeechRecognizerDelegate,ObservableObject
 
 
     static let shared = ConversationManager()
-    static let REQUIREMENT_GPT_PROMPT="Below is a part of conversation context, please provide me 5 key words from this ,only return the 5 words. "
+    static let REQUIREMENT_GPT_PROMPT="Below is a part of conversation context, please provide me 5 key words from this ,each time only return the 3 words."
 
     // creart a list of the string for listing keywords,will show on the ui
     public var keywords: [String] = []

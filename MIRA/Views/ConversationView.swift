@@ -40,6 +40,13 @@ struct ConversationView: View {
             }
             .navigationTitle("Conversation Keys")
         }
+        .onAppear(){
+            // writign a delay 30s to add the entity
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                // turn on the immersive mode
+                toggleImmersiveMode()
+            }
+        }
         .frame(maxWidth: 500)
         .background(.ultraThinMaterial)
         .cornerRadius(20)
@@ -60,6 +67,8 @@ struct ConversationView: View {
         }
     }
     
+
+    
     private func toggleImmersiveMode() {
         Task {
             if isImmersive {
@@ -70,6 +79,18 @@ struct ConversationView: View {
             isImmersive.toggle()
         }
     }
+
+
+
+    // rewrite a function which could dynamically add entity based on the string word
+    private func addEntity(word: String) {
+        let cube = CubemapLoader()
+        
+        let cubeentity = cube.createSkyboxEntityByName(city: word)
+        
+    }
+
+
 }
 
 #Preview {
