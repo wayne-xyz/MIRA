@@ -10,7 +10,7 @@ import Foundation
 class NetworkManager {
     static let shared = NetworkManager()
     private let geminiApiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
-    private let apiKey = ProcessInfo.processInfo.environment["GOOGLE_API_KEY"]!
+    private let apiKey = ""
 
     private init() {}
 
