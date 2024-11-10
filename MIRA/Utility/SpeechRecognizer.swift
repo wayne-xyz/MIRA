@@ -1,15 +1,27 @@
+//
+//  SpeechRecognizer.swift
+//  MIRA
+//
+//  Created by Feolu Kolawole on 11/9/24.
+//  Modified by Jarin Thundathil on 11/9/24
+
 import SwiftUI
 import AVFoundation
 import Speech
+
 class SpeechRecognizer: ObservableObject {
     @Published var transcribedText = ""
     @Published var isRecording = false
     private var audioEngine: AVAudioEngine?
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
-    private let speechRecognizer = SFSpeechRecognizer()
+    private var language = Locale(identifier: "en-US")  // Default to English
+    private var isTranslating = false
     
+    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))  // Default recognizer
     var onCommandDetected: ((String) -> Void)?
+    private var isListeningForCommand = false
+    private var silenceTimer: Timer?
     
     init() {
         requestAuthorization()
@@ -58,17 +70,18 @@ class SpeechRecognizer: ObservableObject {
             return
         }
         
-        recognitionTask = speechRecognizer?.recognitionTask(with: request!) { result, error in
+        recognitionTask = SFSpeechRecognizer(locale: language)?.recognitionTask(with: request!) { result, error in
             if let result = result, !result.isFinal {
-                // Update only if valid text is detected
-                let newTranscription = result.bestTranscription.formattedString
-                if !newTranscription.isEmpty {
-                    self.transcribedText = newTranscription
+                self.transcribedText = result.bestTranscription.formattedString
+                if self.isTranslating {
+                    self.detectKeyword(in: self.transcribedText)
+                }
+                if !self.transcribedText.isEmpty {
                     print("Transcription updated: \(self.transcribedText)")
                 }
             } else if let error = error {
-                print("Recognition error: \(error.localizedDescription)")
-                self.stopRecording()  // Stop on error, do not update with error message
+                self.transcribedText = "Error: \(error.localizedDescription)"
+                self.stopRecording()
             }
         }
     }
@@ -87,5 +100,61 @@ class SpeechRecognizer: ObservableObject {
             onCommandDetected?(trimmedText)
         }
         transcribedText = ""  // Clear to prevent duplicate triggers
+    }
+    
+    private func detectKeyword(in text: String) {
+        let keyword = "hey mira"
+        
+        if isListeningForCommand {
+            resetSilenceTimer()
+        } else if let range = text.lowercased().range(of: keyword) {
+            isListeningForCommand = true
+            transcribedText = String(text[range.lowerBound...])
+            resetSilenceTimer()
+        }
+    }
+    
+    private func resetSilenceTimer() {
+        silenceTimer?.invalidate()
+        silenceTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+            self?.processCommand()
+        }
+    }
+    
+    private func processCommand() {
+        stopRecording()
+        
+        let keyword = "hey mira"
+        let text = transcribedText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if let range = text.range(of: keyword) {
+            let command = text[range.upperBound...].trimmingCharacters(in: .whitespaces)
+            if command.contains("translate") {
+                self.language = Locale(identifier: "zh-CN")  // Set to Mandarin for translation
+                self.isTranslating = true
+                transcribedText = "Listening for Mandarin speech..."
+                startRecording()
+            } else {
+                onCommandDetected?(String(command))
+            }
+        }
+        
+        isListeningForCommand = false
+        transcribedText = ""
+        restartRecording()
+    }
+    
+    private func restartRecording() {
+        stopRecording()
+        startRecording()
+    }
+    
+    private func translate(text: String) {
+        // Add Google Translate API call here (refer to previous implementation).
+        GoogleTranslateAPI().translate(text: text) { translatedText in
+            DispatchQueue.main.async {
+                self.transcribedText = translatedText ?? "Translation failed."
+            }
+        }
     }
 }
