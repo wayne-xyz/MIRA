@@ -4,15 +4,12 @@
 //
 //  Created by Feolu Kolawole on 11/9/24.
 //
-
 import SwiftUI
-
 struct ChatGPTTestView: View {
     @State private var prompt: String = ""
     @State private var response: String = ""
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
-
     var body: some View {
         VStack(spacing: 20) {
             Text("Ask ChatGPT")
@@ -20,7 +17,6 @@ struct ChatGPTTestView: View {
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
                 .padding(.top, 40)
-
             TextField("Enter your question...", text: $prompt)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
@@ -28,7 +24,6 @@ struct ChatGPTTestView: View {
                 .onSubmit {
                     submitPrompt()
                 }
-
             Button(action: submitPrompt) {
                 Text("Send to ChatGPT")
                     .fontWeight(.bold)
@@ -39,13 +34,11 @@ struct ChatGPTTestView: View {
                     .cornerRadius(10)
             }
             .padding(.bottom, 20)
-
             if isLoading {
                 ProgressView()
                     .scaleEffect(1.5)
                     .padding()
             }
-
             if let errorMessage = errorMessage {
                 Text("Error: \(errorMessage)")
                     .foregroundColor(.red)
@@ -62,12 +55,10 @@ struct ChatGPTTestView: View {
                     .background(RoundedRectangle(cornerRadius: 10).fill(Color.gray.opacity(0.1)))
                     .padding()
             }
-
             Spacer()
         }
         .padding()
     }
-
     private func submitPrompt() {
         guard !prompt.isEmpty else { return }
         isLoading = true

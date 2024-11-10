@@ -1,7 +1,6 @@
 import SwiftUI
 import AVFoundation
 import Speech
-
 class SpeechRecognizer: ObservableObject {
     @Published var transcribedText = ""
     @Published var isRecording = false
@@ -11,8 +10,6 @@ class SpeechRecognizer: ObservableObject {
     private let speechRecognizer = SFSpeechRecognizer()
     
     var onCommandDetected: ((String) -> Void)?
-    private var isListeningForCommand = false
-    private var silenceTimer: Timer?
     
     init() {
         requestAuthorization()
@@ -42,6 +39,9 @@ class SpeechRecognizer: ObservableObject {
             return
         }
         
+        // Reset transcribed text at the start of each recording session
+        transcribedText = ""
+        
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
             self.request?.append(buffer)
@@ -52,21 +52,23 @@ class SpeechRecognizer: ObservableObject {
         do {
             try audioEngine?.start()
             isRecording = true
-            transcribedText = "Listening..."
+            print("Started recording...")
         } catch {
             transcribedText = "Failed to start audio engine."
             return
         }
         
         recognitionTask = speechRecognizer?.recognitionTask(with: request!) { result, error in
-            if let result = result {
-                self.transcribedText = result.bestTranscription.formattedString
-                print("Transcription updated: \(self.transcribedText)")
-                self.detectKeyword(in: self.transcribedText)
+            if let result = result, !result.isFinal {
+                // Update only if valid text is detected
+                let newTranscription = result.bestTranscription.formattedString
+                if !newTranscription.isEmpty {
+                    self.transcribedText = newTranscription
+                    print("Transcription updated: \(self.transcribedText)")
+                }
             } else if let error = error {
-                self.transcribedText = "Error: \(error.localizedDescription)"
                 print("Recognition error: \(error.localizedDescription)")
-                self.restartRecording()  // Restart on error
+                self.stopRecording()  // Stop on error, do not update with error message
             }
         }
     }
@@ -78,58 +80,12 @@ class SpeechRecognizer: ObservableObject {
         recognitionTask?.cancel()
         isRecording = false
         print("Stopped recording.")
-    }
-    
-    // Detect "Hey Mira" and capture the command following it
-    private func detectKeyword(in text: String) {
-        let keyword = "hey mira"
         
-        if isListeningForCommand {
-            print("Listening for command after 'Hey Mira'")
-            resetSilenceTimer()  // Wait for pause in speech to process command
-        } else if let range = text.lowercased().range(of: keyword) {
-            isListeningForCommand = true
-            print("'Hey Mira' detected, capturing command...")
-            transcribedText = String(text[range.lowerBound...])
-            resetSilenceTimer()
+        // Ensure only meaningful and unique text is sent
+        let trimmedText = transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedText.isEmpty {
+            onCommandDetected?(trimmedText)
         }
-    }
-    
-    // Restart the timer to detect a pause in the user's speech
-    private func resetSilenceTimer() {
-        silenceTimer?.invalidate()
-        silenceTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
-            self?.processCommand()
-        }
-        print("Silence timer started.")
-    }
-    
-    // Process the command when the user stops speaking for 3 seconds
-    private func processCommand() {
-        print("Processing command...")
-        stopRecording()
-        
-        // Extract command text after "Hey Mira"
-        let keyword = "hey mira"
-        let text = transcribedText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        if let range = text.range(of: keyword) {
-            let command = text[range.upperBound...].trimmingCharacters(in: .whitespaces)
-            print("Command extracted: \(command)")
-            onCommandDetected?(String(command))
-        } else {
-            print("No command found after 'Hey Mira'.")
-            onCommandDetected?(transcribedText)
-        }
-        
-        isListeningForCommand = false
-        transcribedText = ""
-        restartRecording()  // Restart listening for "Hey Mira" again
-    }
-    
-    // Restart recording for continuous listening
-    private func restartRecording() {
-        print("Restarting recording...")
-        stopRecording()
-        startRecording()
+        transcribedText = ""  // Clear to prevent duplicate triggers
     }
 }

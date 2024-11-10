@@ -1,13 +1,10 @@
-//
 //  TextSpeaker.swift
 //  MIRA
 //
 //  Created by Rongwei Ji on 11/9/24.
 //
-
 // TTS Manager Class
 import AVFoundation
-
 class TextSpeaker: ObservableObject {
     private let synthesizer = AVSpeechSynthesizer()
     
