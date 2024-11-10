@@ -4,6 +4,9 @@ import RealityKit
 struct ConversationView: View {
     @StateObject private var conversationManager = ConversationManager.shared
     @State private var isListening = false
+    @Environment(\.openImmersiveSpace) private var openImmersiveSpace
+    @Environment(\.dismissImmersiveSpace) private var dismissImmersiveSpace
+    @State private var isImmersive = false
     
     var body: some View {
         NavigationStack {
@@ -54,6 +57,17 @@ struct ConversationView: View {
             }
         } else {
             conversationManager.stopRecording()
+        }
+    }
+    
+    private func toggleImmersiveMode() {
+        Task {
+            if isImmersive {
+                await dismissImmersiveSpace()
+            } else {
+                await openImmersiveSpace(id: "ImmersiveSpace")
+            }
+            isImmersive.toggle()
         }
     }
 }
