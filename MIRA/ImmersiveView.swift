@@ -1,8 +1,8 @@
 //
 //  ImmersiveView.swift
-//  MIRA
+//  MIRAv2
 //
-//  Created by Rongwei Ji on 11/9/24.
+//  Created by Mehrad Faridan on 2024-11-09.
 //
 
 import SwiftUI
@@ -10,21 +10,41 @@ import RealityKit
 import RealityKitContent
 
 struct ImmersiveView: View {
-
+    
     var body: some View {
         RealityView { content in
-            // Add the initial RealityKit content
-            if let immersiveContentEntity = try? await Entity(named: "Immersive", in: realityKitContentBundle) {
-                content.add(immersiveContentEntity)
-
-                // Put skybox here.  See example in World project available at
-                // https://developer.apple.com/
+            if let angelEntity = try? await Entity(named: "Angel.usdz", in: realityKitContentBundle) {
+                content.add(angelEntity)
+                
+                // Scale down the model
+                angelEntity.scale = SIMD3<Float>(0.1, 0.1, 0.1) // Adjust scale as needed
+                
+                // Move the model to a new position
+                angelEntity.position = SIMD3<Float>(x: 75, y: 20, z: -150) // Adjust position as needed
+                
+                if let animation = angelEntity.availableAnimations.first {
+                    angelEntity.playAnimation(animation.repeat())
+                }
+            }
+            
+            if let devilEntity = try? await Entity(named: "Devil.usdz", in: realityKitContentBundle) {
+                content.add(devilEntity)
+                
+                // Scale down the model
+                devilEntity.scale = SIMD3<Float>(0.2, 0.2, 0.2) // Adjust scale as needed
+                
+                // Move the model to a new position
+                devilEntity.position = SIMD3<Float>(x: -75.0, y: 20, z: -150.0) // Adjust position as needed
+                
+                if let animation = devilEntity.availableAnimations.first {
+                    devilEntity.playAnimation(animation.repeat())
+                }
             }
         }
     }
 }
 
-#Preview(immersionStyle: .full) {
+#Preview(immersionStyle: .mixed) {
     ImmersiveView()
         .environment(AppModel())
 }

@@ -51,4 +51,3 @@ struct UsageMetadata: Codable {
     let candidatesTokenCount: Int
     let totalTokenCount: Int
 }
-

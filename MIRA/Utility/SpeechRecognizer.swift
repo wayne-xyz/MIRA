@@ -17,6 +17,11 @@ class SpeechRecognizer: ObservableObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private let speechRecognizer = SFSpeechRecognizer()
     
+    // Completion handler to trigger when "Hey Mira" and the following command are detected
+    var onCommandDetected: ((String) -> Void)?
+    private var isListeningForCommand = false
+    private var silenceTimer: Timer?
+    
     init() {
         requestAuthorization()
     }
@@ -59,8 +64,10 @@ class SpeechRecognizer: ObservableObject {
         recognitionTask = speechRecognizer?.recognitionTask(with: request!) { result, error in
             if let result = result {
                 self.transcribedText = result.bestTranscription.formattedString
+                self.detectKeyword(in: self.transcribedText)
             } else if let error = error {
                 self.transcribedText = "Error: \(error.localizedDescription)"
+                self.restartRecording()  // Restart on error
             }
         }
     }
@@ -71,5 +78,53 @@ class SpeechRecognizer: ObservableObject {
         request?.endAudio()
         recognitionTask?.cancel()
         isRecording = false
+    }
+    
+    // Detect "Hey Mira" and capture the command following it
+    private func detectKeyword(in text: String) {
+        let keyword = "hey mira"
+        
+        if isListeningForCommand {
+            // Restart silence timer to detect pauses
+            resetSilenceTimer()
+        } else if let range = text.lowercased().range(of: keyword) {
+            // Start listening for the command after "Hey Mira" is detected
+            isListeningForCommand = true
+            transcribedText = String(text[range.lowerBound...])  // Start capturing after "Hey Mira"
+            resetSilenceTimer()  // Start timer to detect end of command
+        }
+    }
+    
+    // Restart the timer to detect a pause in the user's speech
+    private func resetSilenceTimer() {
+        silenceTimer?.invalidate()
+        silenceTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+            self?.processCommand()
+        }
+    }
+    
+    // Process the command when the user stops speaking for 3 seconds
+    private func processCommand() {
+        stopRecording()
+        
+        // Extract command text after "Hey Mira"
+        let keyword = "hey mira"
+        let text = transcribedText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        if let range = text.range(of: keyword) {
+            let command = text[range.upperBound...].trimmingCharacters(in: .whitespaces)
+            onCommandDetected?(String(command))
+        } else {
+            onCommandDetected?(transcribedText)
+        }
+        
+        isListeningForCommand = false
+        transcribedText = ""
+        restartRecording()  // Restart listening for "Hey Mira" again
+    }
+    
+    // Restart recording for continuous listening
+    private func restartRecording() {
+        stopRecording()
+        startRecording()
     }
 }
