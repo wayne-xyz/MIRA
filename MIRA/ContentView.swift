@@ -6,6 +6,12 @@ struct ContentView: View {
     @EnvironmentObject var appModel: AppModel
     @Environment(\.presentationMode) private var presentationMode
 
+    @State private var showImmersiveSpace = false
+    @State private var immersiveSpaceIsShown = false
+
+    @Environment(\.openImmersiveSpace) var openImmersiveSpace
+    @Environment(\.dismissImmersiveSpace) var dismissImmersiveSpace
+
     var body: some View {
         ZStack {
             // Full-window green background
@@ -45,7 +51,8 @@ struct ContentView: View {
     }
 }
 
+
+
 #Preview(windowStyle: .automatic) {
     ContentView()
-        .environment(AppModel())
 }
