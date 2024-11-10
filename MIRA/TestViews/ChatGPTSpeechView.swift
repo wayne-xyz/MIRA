@@ -103,3 +103,7 @@ struct ChatGPTSpeechView: View {
         }
     }
 }
+
+#Preview {
+    ChatGPTSpeechView()
+}

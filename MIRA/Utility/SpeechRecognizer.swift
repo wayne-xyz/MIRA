@@ -13,6 +13,8 @@ class SpeechRecognizer: ObservableObject {
     var onCommandDetected: ((String) -> Void)?
     private var isListeningForCommand = false
     private var silenceTimer: Timer?
+    private var speakerCheckTimer: Timer?
+    private var audioPlayer: AVAudioPlayer?
     
     init() {
         requestAuthorization()
@@ -72,6 +74,7 @@ class SpeechRecognizer: ObservableObject {
     }
     
     func stopRecording() {
+        stopSpeakerCheck()
         audioEngine?.stop()
         audioEngine?.inputNode.removeTap(onBus: 0)
         request?.endAudio()
@@ -123,7 +126,9 @@ class SpeechRecognizer: ObservableObject {
         
         isListeningForCommand = false
         transcribedText = ""
-        restartRecording()  // Restart listening for "Hey Mira" again
+        
+        //  check the speaker and then determin restart or not 
+        checkSpeakerAndRestart()  // Replace direct restart with speaker check
     }
     
     // Restart recording for continuous listening
@@ -131,5 +136,27 @@ class SpeechRecognizer: ObservableObject {
         print("Restarting recording...")
         stopRecording()
         startRecording()
+    }
+    
+    // Add this function to check speaker status and restart recording
+    private func checkSpeakerAndRestart() {
+        stopSpeakerCheck() // Stop existing timer if any
+        
+        speakerCheckTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            
+            if let player = self.audioPlayer, player.isPlaying {
+                print("Speaker is still playing, waiting...")
+            } else {
+                print("Speaker is not playing, restarting recording")
+                self.stopSpeakerCheck()
+                self.restartRecording()
+            }
+        }
+    }
+    
+    private func stopSpeakerCheck() {
+        speakerCheckTimer?.invalidate()
+        speakerCheckTimer = nil
     }
 }
