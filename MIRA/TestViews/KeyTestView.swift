@@ -4,7 +4,7 @@ import SwiftUI
 
 struct KeyTestView: View {
     var body: some View {
-        Text("Key: \(Key.shared.apiKey)")
+        Text("Key:")
     }
 }
 

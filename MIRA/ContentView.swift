@@ -29,7 +29,7 @@ struct ContentView: View {
                 .padding(.top, 50)
         }
         .onAppear() {
-            performLoadingSkybox()
+            performGenerator()
         }
         .padding()
         .onChange(of: showImmersiveSpace) { _, newValue in
@@ -53,7 +53,31 @@ struct ContentView: View {
     }
     
     
-    func performLoadingSkybox(){
+    
+    
+    
+    func performGenerator(){
+        let skyApi=Key.init(keyfilename: ".env2").apiKey
+        let Skybox=SkyboxGenerator(apiKey: skyApi)
+        let TEST_PROMPT="Stanford Campus in california an sunny day with building and trees"
+        // print time as log 
+        let startTime = Date()
+        print("Starting skybox generation at \(startTime)")
+        
+        Skybox.generateSkybox(skyboxStyleId: 35, prompt: TEST_PROMPT) { result in
+            switch result {
+            case .success(let skyboxResponse):
+                print("Skybox generated with ID: \(skyboxResponse.id), Status: \(skyboxResponse.status)")
+                if let fileUrl = skyboxResponse.fileUrl {
+                    print("File URL: \(fileUrl)")
+                }
+            case .failure(let error):
+                print("Failed to generate skybox: \(error)")
+            }
+        }
+        
+        
+        
         print("Loding from the skybox")
     }
 }
