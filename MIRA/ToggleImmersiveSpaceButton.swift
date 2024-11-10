@@ -1,8 +1,8 @@
 //
 //  ToggleImmersiveSpaceButton.swift
-//  MIRA
+//  MIRAv2
 //
-//  Created by Rongwei Ji on 11/9/24.
+//  Created by Mehrad Faridan on 2024-11-09.
 //
 
 import SwiftUI
