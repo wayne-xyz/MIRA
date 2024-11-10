@@ -8,7 +8,7 @@
 import Foundation
 
 struct GoogleTranslateAPI {
-    let apiKey = "AIzaSyClnxizpg-RrIUzJSOu0KOdQEL_0wcGsxI"  // Replace with your actual API key
+    let apiKey = "YOUR_API_KEY"  // Replace with your actual API key
     let targetLanguage = "en"
     
     func translate(text: String, completion: @escaping (String?) -> Void) {
