@@ -6,7 +6,7 @@ class ConversationManager: NSObject, SFSpeechRecognizerDelegate,ObservableObject
 
 
     static let shared = ConversationManager()
-    static let REQUIREMENT_GPT_PROMPT="Here is a part of conversation context based on that, please provide me 5 key words to summarize the context"
+    static let REQUIREMENT_GPT_PROMPT="Below is a part of conversation context, please provide me 5 key words from this ,each time only return the 3 words."
 
     // creart a list of the string for listing keywords,will show on the ui
     public var keywords: [String] = []
@@ -111,6 +111,7 @@ class ConversationManager: NSObject, SFSpeechRecognizerDelegate,ObservableObject
     
     private func performPeriodicProcessing() {
         // Process the current window context
+        windowContext=ConversationManager.REQUIREMENT_GPT_PROMPT + windowContext
         updateKeywords(context: windowContext)
         
         // Reset for next window
