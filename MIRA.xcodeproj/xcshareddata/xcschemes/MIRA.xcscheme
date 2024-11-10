@@ -63,13 +63,6 @@
             ReferencedContainer = "container:MIRA.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <EnvironmentVariables>
-         <EnvironmentVariable
-            key = "GOOGLE_API_KEY"
-            value = "AIzaSyC387iECphPWy8Be2GaxIsYDsmSgtLSNGk"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-      </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
