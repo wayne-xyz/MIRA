@@ -1,0 +1,15 @@
+{
+  "originHash" : "0c3e8a8aab26c4a883dee07686f1cd97182b0515a2f4bc0ca9583971150834e4",
+  "pins" : [
+    {
+      "identity" : "zipfoundation",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/weichsel/ZIPFoundation",
+      "state" : {
+        "revision" : "02b6abe5f6eef7e3cbd5f247c5cc24e246efcfe0",
+        "version" : "0.9.19"
+      }
+    }
+  ],
+  "version" : 3
+}

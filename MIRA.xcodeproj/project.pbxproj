@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		CCBFB87B2CDF505200BA5E5D /* RealityKitContent in Frameworks */ = {isa = PBXBuildFile; productRef = CCBFB87A2CDF505200BA5E5D /* RealityKitContent */; };
+		CCBFB97D2CE00C7B00BA5E5D /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = CCBFB97C2CE00C7B00BA5E5D /* ZIPFoundation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -58,6 +59,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CCBFB87B2CDF505200BA5E5D /* RealityKitContent in Frameworks */,
+				CCBFB97D2CE00C7B00BA5E5D /* ZIPFoundation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +121,7 @@
 			name = MIRA;
 			packageProductDependencies = (
 				CCBFB87A2CDF505200BA5E5D /* RealityKitContent */,
+				CCBFB97C2CE00C7B00BA5E5D /* ZIPFoundation */,
 			);
 			productName = MIRA;
 			productReference = CCBFB8752CDF505200BA5E5D /* MIRA.app */;
@@ -175,6 +178,9 @@
 			);
 			mainGroup = CCBFB86C2CDF505200BA5E5D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CCBFB97B2CE00C1E00BA5E5D /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CCBFB8762CDF505200BA5E5D /* Products */;
 			projectDirPath = "";
@@ -474,10 +480,26 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		CCBFB97B2CE00C1E00BA5E5D /* XCRemoteSwiftPackageReference "ZIPFoundation" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/weichsel/ZIPFoundation";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.9.19;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		CCBFB87A2CDF505200BA5E5D /* RealityKitContent */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RealityKitContent;
+		};
+		CCBFB97C2CE00C7B00BA5E5D /* ZIPFoundation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CCBFB97B2CE00C1E00BA5E5D /* XCRemoteSwiftPackageReference "ZIPFoundation" */;
+			productName = ZIPFoundation;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
