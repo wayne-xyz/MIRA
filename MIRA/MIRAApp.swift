@@ -19,7 +19,7 @@ struct MIRAApp: App {
         }
 
         ImmersiveSpace(id: appModel.immersiveSpaceID) {
-            ImmersiveView()
+            ContentView()
                 .environment(appModel)
                 .onAppear {
                     appModel.immersiveSpaceState = .open
