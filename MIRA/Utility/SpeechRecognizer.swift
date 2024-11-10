@@ -46,9 +46,16 @@ class SpeechRecognizer: ObservableObject {
         audioEngine = AVAudioEngine()
         request = SFSpeechAudioBufferRecognitionRequest()
         
-        let inputNode = audioEngine?.inputNode
-        let recordingFormat = inputNode?.outputFormat(forBus: 0)
-        inputNode?.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+        guard let inputNode = audioEngine?.inputNode else {
+            transcribedText = "Audio input node unavailable."
+            return
+        }
+        
+        // Reset transcribed text at the start of each recording session
+        transcribedText = ""
+        
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
             self.request?.append(buffer)
         }
         
@@ -57,20 +64,24 @@ class SpeechRecognizer: ObservableObject {
         do {
             try audioEngine?.start()
             isRecording = true
+            print("Started recording...")
         } catch {
             transcribedText = "Failed to start audio engine."
             return
         }
         
         recognitionTask = SFSpeechRecognizer(locale: language)?.recognitionTask(with: request!) { result, error in
-            if let result = result {
+            if let result = result, !result.isFinal {
                 self.transcribedText = result.bestTranscription.formattedString
                 if self.isTranslating {
                     self.detectKeyword(in: self.transcribedText)
                 }
+                if !self.transcribedText.isEmpty {
+                    print("Transcription updated: \(self.transcribedText)")
+                }
             } else if let error = error {
                 self.transcribedText = "Error: \(error.localizedDescription)"
-                self.restartRecording()
+                self.stopRecording()
             }
         }
     }
@@ -81,6 +92,14 @@ class SpeechRecognizer: ObservableObject {
         request?.endAudio()
         recognitionTask?.cancel()
         isRecording = false
+        print("Stopped recording.")
+        
+        // Ensure only meaningful and unique text is sent
+        let trimmedText = transcribedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedText.isEmpty {
+            onCommandDetected?(trimmedText)
+        }
+        transcribedText = ""  // Clear to prevent duplicate triggers
     }
     
     private func detectKeyword(in text: String) {

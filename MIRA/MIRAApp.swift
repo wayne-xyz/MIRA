@@ -14,7 +14,7 @@ struct MIRAApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView() // Change to starting view (useful for testing)
+            ChatGPTSpeechView() // Change to starting view (useful for testing)
                 .environment(appModel)
         }
 

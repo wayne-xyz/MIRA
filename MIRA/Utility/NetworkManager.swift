@@ -4,50 +4,34 @@
 //
 //  Created by Feolu Kolawole on 11/9/24.
 //
-
 import Foundation
-
 class NetworkManager {
     static let shared = NetworkManager()
-    private let geminiApiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
-    private let apiKey = ProcessInfo.processInfo.environment["GOOGLE_API_KEY"]!
-
-    private init() {}
-
-    func sendGeminiPrompt(_ prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
+    private let openAIKey = ""
+    private let chatGPTApiUrl = "https://api.openai.com/v1/chat/completions"
+    private init() {} // Private initializer to enforce singleton pattern
+    func sendChatGPTPrompt(_ prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
         guard !prompt.isEmpty else {
             completion(.failure(NSError(domain: "PromptError", code: 400, userInfo: [NSLocalizedDescriptionKey: "Prompt cannot be empty."])))
             return
         }
-
-        guard let url = URL(string: "\(geminiApiUrl)?key=\(apiKey)") else {
-            completion(.failure(NSError(domain: "URLError", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid URL."])))
-            return
-        }
-
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: URL(string: chatGPTApiUrl)!)
         request.httpMethod = "POST"
+        request.addValue("Bearer \(openAIKey)", forHTTPHeaderField: "Authorization")
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        // Request body as per the Google Gemini API format
         let parameters: [String: Any] = [
-            "contents": [
-                [
-                    "parts": [
-                        ["text": prompt]
-                    ]
-                ]
-            ]
+            "model": "gpt-3.5-turbo",
+            "messages": [
+                ["role": "user", "content": prompt]
+            ],
+            "max_tokens": 100
         ]
-
         request.httpBody = try? JSONSerialization.data(withJSONObject: parameters)
-
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 completion(.failure(error))
                 return
             }
-
             guard let httpResponse = response as? HTTPURLResponse,
                   (200...299).contains(httpResponse.statusCode) else {
                 let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
@@ -55,23 +39,15 @@ class NetworkManager {
                 completion(.failure(NSError(domain: "ServerError", code: statusCode, userInfo: [NSLocalizedDescriptionKey: errorMessage])))
                 return
             }
-
-            guard let data = data else {
-                completion(.failure(NSError(domain: "ResponseParsingError", code: 500, userInfo: [NSLocalizedDescriptionKey: "No data received."])))
+            guard let data = data,
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let choices = json["choices"] as? [[String: Any]],
+                  let message = choices.first?["message"] as? [String: Any],
+                  let text = message["content"] as? String else {
+                completion(.failure(NSError(domain: "ResponseParsingError", code: 500, userInfo: [NSLocalizedDescriptionKey: "Failed to parse response."])))
                 return
             }
-
-            // Attempt to decode the JSON response into GeminiResponse
-            do {
-                let decodedResponse = try JSONDecoder().decode(GeminiResponse.self, from: data)
-                if let text = decodedResponse.candidates.first?.content.parts.first?.text {
-                    completion(.success(text.trimmingCharacters(in: .whitespacesAndNewlines)))
-                } else {
-                    completion(.failure(NSError(domain: "ResponseParsingError", code: 500, userInfo: [NSLocalizedDescriptionKey: "No text content found in response."])))
-                }
-            } catch {
-                completion(.failure(NSError(domain: "ResponseParsingError", code: 500, userInfo: [NSLocalizedDescriptionKey: "Failed to parse response JSON: \(error.localizedDescription)"])))
-            }
+            completion(.success(text.trimmingCharacters(in: .whitespacesAndNewlines)))
         }.resume()
     }
 }

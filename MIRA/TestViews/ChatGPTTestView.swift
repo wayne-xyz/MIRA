@@ -1,26 +1,22 @@
 //
-//  GeminiTestView.swift
+//  ChatGPTTestView.swift
 //  MIRA
 //
 //  Created by Feolu Kolawole on 11/9/24.
 //
-
 import SwiftUI
-
-struct GeminiTestView: View {
+struct ChatGPTTestView: View {
     @State private var prompt: String = ""
     @State private var response: String = ""
     @State private var isLoading: Bool = false
     @State private var errorMessage: String?
-
     var body: some View {
         VStack(spacing: 20) {
-            Text("Ask Gemini")
+            Text("Ask ChatGPT")
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
                 .padding(.top, 40)
-
             TextField("Enter your question...", text: $prompt)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
@@ -28,9 +24,8 @@ struct GeminiTestView: View {
                 .onSubmit {
                     submitPrompt()
                 }
-
             Button(action: submitPrompt) {
-                Text("Send to Gemini")
+                Text("Send to ChatGPT")
                     .fontWeight(.bold)
                     .padding()
                     .frame(width: 200, height: 50)
@@ -39,13 +34,11 @@ struct GeminiTestView: View {
                     .cornerRadius(10)
             }
             .padding(.bottom, 20)
-
             if isLoading {
                 ProgressView()
                     .scaleEffect(1.5)
                     .padding()
             }
-
             if let errorMessage = errorMessage {
                 Text("Error: \(errorMessage)")
                     .foregroundColor(.red)
@@ -53,7 +46,7 @@ struct GeminiTestView: View {
                     .padding()
                     .frame(width: 400)
             } else if !response.isEmpty {
-                Text("Response from Gemini:")
+                Text("Response from ChatGPT:")
                     .font(.headline)
                     .padding(.top)
                 Text(response)
@@ -62,19 +55,17 @@ struct GeminiTestView: View {
                     .background(RoundedRectangle(cornerRadius: 10).fill(Color.gray.opacity(0.1)))
                     .padding()
             }
-
             Spacer()
         }
         .padding()
     }
-
     private func submitPrompt() {
         guard !prompt.isEmpty else { return }
         isLoading = true
         errorMessage = nil
         response = ""
         
-        NetworkManager.shared.sendGeminiPrompt(prompt) { result in
+        NetworkManager.shared.sendChatGPTPrompt(prompt) { result in
             DispatchQueue.main.async {
                 isLoading = false
                 switch result {
