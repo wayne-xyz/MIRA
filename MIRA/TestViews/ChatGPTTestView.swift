@@ -1,5 +1,5 @@
 //
-//  GeminiTestView.swift
+//  ChatGPTTestView.swift
 //  MIRA
 //
 //  Created by Feolu Kolawole on 11/9/24.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct GeminiTestView: View {
+struct ChatGPTTestView: View {
     @State private var prompt: String = ""
     @State private var response: String = ""
     @State private var isLoading: Bool = false
@@ -15,7 +15,7 @@ struct GeminiTestView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("Ask Gemini")
+            Text("Ask ChatGPT")
                 .font(.largeTitle)
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
@@ -30,7 +30,7 @@ struct GeminiTestView: View {
                 }
 
             Button(action: submitPrompt) {
-                Text("Send to Gemini")
+                Text("Send to ChatGPT")
                     .fontWeight(.bold)
                     .padding()
                     .frame(width: 200, height: 50)
@@ -53,7 +53,7 @@ struct GeminiTestView: View {
                     .padding()
                     .frame(width: 400)
             } else if !response.isEmpty {
-                Text("Response from Gemini:")
+                Text("Response from ChatGPT:")
                     .font(.headline)
                     .padding(.top)
                 Text(response)
@@ -74,7 +74,7 @@ struct GeminiTestView: View {
         errorMessage = nil
         response = ""
         
-        NetworkManager.shared.sendGeminiPrompt(prompt) { result in
+        NetworkManager.shared.sendChatGPTPrompt(prompt) { result in
             DispatchQueue.main.async {
                 isLoading = false
                 switch result {

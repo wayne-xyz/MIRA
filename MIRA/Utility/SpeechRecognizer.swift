@@ -1,10 +1,3 @@
-//
-//  SpeechRecognizer.swift
-//  MIRA
-//
-//  Created by Feolu Kolawole on 11/9/24.
-//
-
 import SwiftUI
 import AVFoundation
 import Speech
@@ -17,10 +10,11 @@ class SpeechRecognizer: ObservableObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private let speechRecognizer = SFSpeechRecognizer()
     
-    // Completion handler to trigger when "Hey Mira" and the following command are detected
     var onCommandDetected: ((String) -> Void)?
     private var isListeningForCommand = false
     private var silenceTimer: Timer?
+    private var speakerCheckTimer: Timer?
+    private var audioPlayer: AVAudioPlayer?
     
     init() {
         requestAuthorization()
@@ -45,9 +39,13 @@ class SpeechRecognizer: ObservableObject {
         audioEngine = AVAudioEngine()
         request = SFSpeechAudioBufferRecognitionRequest()
         
-        let inputNode = audioEngine?.inputNode
-        let recordingFormat = inputNode?.outputFormat(forBus: 0)
-        inputNode?.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+        guard let inputNode = audioEngine?.inputNode else {
+            transcribedText = "Audio input node unavailable."
+            return
+        }
+        
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
             self.request?.append(buffer)
         }
         
@@ -56,6 +54,7 @@ class SpeechRecognizer: ObservableObject {
         do {
             try audioEngine?.start()
             isRecording = true
+            transcribedText = "Listening..."
         } catch {
             transcribedText = "Failed to start audio engine."
             return
@@ -64,20 +63,24 @@ class SpeechRecognizer: ObservableObject {
         recognitionTask = speechRecognizer?.recognitionTask(with: request!) { result, error in
             if let result = result {
                 self.transcribedText = result.bestTranscription.formattedString
+                print("Transcription updated: \(self.transcribedText)")
                 self.detectKeyword(in: self.transcribedText)
             } else if let error = error {
                 self.transcribedText = "Error: \(error.localizedDescription)"
+                print("Recognition error: \(error.localizedDescription)")
                 self.restartRecording()  // Restart on error
             }
         }
     }
     
     func stopRecording() {
+        stopSpeakerCheck()
         audioEngine?.stop()
         audioEngine?.inputNode.removeTap(onBus: 0)
         request?.endAudio()
         recognitionTask?.cancel()
         isRecording = false
+        print("Stopped recording.")
     }
     
     // Detect "Hey Mira" and capture the command following it
@@ -85,13 +88,13 @@ class SpeechRecognizer: ObservableObject {
         let keyword = "hey mira"
         
         if isListeningForCommand {
-            // Restart silence timer to detect pauses
-            resetSilenceTimer()
+            print("Listening for command after 'Hey Mira'")
+            resetSilenceTimer()  // Wait for pause in speech to process command
         } else if let range = text.lowercased().range(of: keyword) {
-            // Start listening for the command after "Hey Mira" is detected
             isListeningForCommand = true
-            transcribedText = String(text[range.lowerBound...])  // Start capturing after "Hey Mira"
-            resetSilenceTimer()  // Start timer to detect end of command
+            print("'Hey Mira' detected, capturing command...")
+            transcribedText = String(text[range.lowerBound...])
+            resetSilenceTimer()
         }
     }
     
@@ -101,10 +104,12 @@ class SpeechRecognizer: ObservableObject {
         silenceTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
             self?.processCommand()
         }
+        print("Silence timer started.")
     }
     
     // Process the command when the user stops speaking for 3 seconds
     private func processCommand() {
+        print("Processing command...")
         stopRecording()
         
         // Extract command text after "Hey Mira"
@@ -112,19 +117,46 @@ class SpeechRecognizer: ObservableObject {
         let text = transcribedText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         if let range = text.range(of: keyword) {
             let command = text[range.upperBound...].trimmingCharacters(in: .whitespaces)
+            print("Command extracted: \(command)")
             onCommandDetected?(String(command))
         } else {
+            print("No command found after 'Hey Mira'.")
             onCommandDetected?(transcribedText)
         }
         
         isListeningForCommand = false
         transcribedText = ""
-        restartRecording()  // Restart listening for "Hey Mira" again
+        
+        //  check the speaker and then determin restart or not 
+        checkSpeakerAndRestart()  // Replace direct restart with speaker check
     }
     
     // Restart recording for continuous listening
     private func restartRecording() {
+        print("Restarting recording...")
         stopRecording()
         startRecording()
+    }
+    
+    // Add this function to check speaker status and restart recording
+    private func checkSpeakerAndRestart() {
+        stopSpeakerCheck() // Stop existing timer if any
+        
+        speakerCheckTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            
+            if let player = self.audioPlayer, player.isPlaying {
+                print("Speaker is still playing, waiting...")
+            } else {
+                print("Speaker is not playing, restarting recording")
+                self.stopSpeakerCheck()
+                self.restartRecording()
+            }
+        }
+    }
+    
+    private func stopSpeakerCheck() {
+        speakerCheckTimer?.invalidate()
+        speakerCheckTimer = nil
     }
 }
