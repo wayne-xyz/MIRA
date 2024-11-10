@@ -8,6 +8,7 @@
 import Foundation
 
 class NetworkManager {
+ 
     static let shared = NetworkManager()
     private let openAIKey = ""
     private let chatGPTApiUrl = "https://api.openai.com/v1/chat/completions"
@@ -15,6 +16,26 @@ class NetworkManager {
     private init() {} // Private initializer to enforce singleton pattern
 
     func sendChatGPTPrompt(_ prompt: String, completion: @escaping (Result<String, Error>) -> Void) {
+        let timeRecord = TimeRecordManager.shared
+        
+        // Check if enough time has passed since last request
+        if let lastRequestTime = timeRecord.getTimeRecord(for: "GPTTime") {
+            let currentTime = Date()
+            let timeDifference = currentTime.timeIntervalSince(lastRequestTime)
+            print("TimDiffere\(timeDifference)")
+            // If less than 3 seconds have passed since last request
+            if timeDifference < 10 {
+                completion(.failure(NSError(domain: "RateLimitError", 
+                                         code: 429, 
+                                         userInfo: [NSLocalizedDescriptionKey: "Please wait before making another request."])))
+                return
+            }
+        }
+        
+        // Record current time for this request
+        timeRecord.saveTimeRecord(for: "GPTTime")
+    
+        
         guard !prompt.isEmpty else {
             completion(.failure(NSError(domain: "PromptError", code: 400, userInfo: [NSLocalizedDescriptionKey: "Prompt cannot be empty."])))
             return
