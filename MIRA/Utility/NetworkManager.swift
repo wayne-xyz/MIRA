@@ -25,7 +25,7 @@ class NetworkManager {
             print("TimDiffere\(timeDifference)")
             // If less than 3 seconds have passed since last request
             if timeDifference < 10 {
-                completion(.failure(NSError(domain: "RateLimitError", 
+                completion(.failure(NSError(domain: "RateLimitError",
                                          code: 429, 
                                          userInfo: [NSLocalizedDescriptionKey: "Please wait before making another request."])))
                 return
