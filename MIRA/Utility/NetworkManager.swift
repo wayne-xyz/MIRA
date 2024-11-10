@@ -10,7 +10,7 @@ import Foundation
 class NetworkManager {
  
     static let shared = NetworkManager()
-    private let openAIKey = Key.shared.apiKey
+    private let openAIKey =  Key(keyfilename: ".env")
     private let chatGPTApiUrl = "https://api.openai.com/v1/chat/completions"
 
     private init() {} // Private initializer to enforce singleton pattern

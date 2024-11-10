@@ -1,15 +1,14 @@
 import Foundation
 
 class Key {
-    static let shared = Key()
     private(set) var apiKey: String = ""
     
-    private init() {
-        loadKey()
+    init(keyfilename: String) {
+        loadKey(keyfilename: keyfilename)
     }
     
-    private func loadKey() {
-        guard let path = Bundle.main.path(forResource: ".env", ofType: nil) else {
+    private func loadKey(keyfilename: String) {
+        guard let path = Bundle.main.path(forResource: keyfilename, ofType: nil) else {
             print("❌ No .env file found")
             return
         }
