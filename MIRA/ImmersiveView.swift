@@ -49,7 +49,7 @@ struct ImmersiveView: View {
         }
         .onAppear() {
 //
-            onAppearFunction()
+ 
         }
     }
 }

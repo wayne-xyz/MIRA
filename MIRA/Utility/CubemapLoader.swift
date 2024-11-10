@@ -37,17 +37,21 @@ class CubemapLoader {
         let cubeSize: Float = 1000 // Adjust size as needed for immersion
         let cubeMesh = MeshResource.generateBox(size: cubeSize)
         
-        print("Geting the materials... ")
         // Create the material for each face
-        let materials = [
-            createMaterial(imageName: "cube_front"),
-            createMaterial(imageName: "cube_back"),
-            createMaterial(imageName: "cube_left"),
-            createMaterial(imageName: "cube_right"),
-            createMaterial(imageName: "cube_up"),
-            createMaterial(imageName: "cube_down")
-        ]
-        print("Number of materials created: \(materials.count)")
+        let imageNames = [
+             "cube_front",
+             "cube_back",
+             "cube_left",
+             "cube_right",
+             "cube_up",
+             "cube_down"
+         ]
+        
+        // Create the materials for each face and log which image is being used
+        let materials = imageNames.map { imageName in
+            print("Assigning material to \(imageName) face")  // Log face assignment
+            return createMaterial(imageName: imageName)
+        }
         
         // Create the model entity for the cube
         let cubeEntity = ModelEntity(mesh: cubeMesh, materials: materials)
