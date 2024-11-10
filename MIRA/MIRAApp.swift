@@ -32,5 +32,4 @@ struct MIRAApp: App {
     }
 }
 
-
 // TEST COMMIT COMMENT
