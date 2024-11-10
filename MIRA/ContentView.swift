@@ -1,26 +1,47 @@
-//
-//  ContentView.swift
-//  MIRAv2
-//
-//  Created by Mehrad Faridan on 2024-11-09.
-//
-
 import SwiftUI
 import RealityKit
 import RealityKitContent
 
 struct ContentView: View {
+    @EnvironmentObject var appModel: AppModel
+    @Environment(\.presentationMode) private var presentationMode
 
     var body: some View {
-        VStack {
-            Model3D(named: "Scene", bundle: realityKitContentBundle)
-                .padding(.bottom, 50)
+        ZStack {
+            // Full-window green background
+            Color.green
+                .ignoresSafeArea() // Ensures the background fills the entire screen
 
-            Text("Hello, world!")
+            VStack(spacing: 20) {
+                Text("Welcome! Press Begin Simulation to Start!")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(10)
+                    .shadow(radius: 3)
 
-            ToggleImmersiveSpaceButton()
+                ToggleImmersiveSpaceButton()
+                    .padding()
+                    .background(Color.white.opacity(0.8))
+                    .cornerRadius(10)
+                    .shadow(radius: 3)
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white)
+                    .shadow(radius: 10)
+            )
+            .padding(.horizontal)
         }
-        .padding()
+        .onChange(of: appModel.immersiveSpaceState) { newState in
+            // Dismiss ContentView immediately when immersive space is opened
+            if newState == .open {
+                presentationMode.wrappedValue.dismiss()
+            }
+        }
     }
 }
 

@@ -10,12 +10,6 @@ class SpeechRecognizer: ObservableObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private let speechRecognizer = SFSpeechRecognizer()
     
-    var onCommandDetected: ((String) -> Void)?
-    private var isListeningForCommand = false
-    private var silenceTimer: Timer?
-    private var speakerCheckTimer: Timer?
-    private var audioPlayer: AVAudioPlayer?
-    
     init() {
         requestAuthorization()
     }
@@ -63,100 +57,18 @@ class SpeechRecognizer: ObservableObject {
         recognitionTask = speechRecognizer?.recognitionTask(with: request!) { result, error in
             if let result = result {
                 self.transcribedText = result.bestTranscription.formattedString
-                print("Transcription updated: \(self.transcribedText)")
-                self.detectKeyword(in: self.transcribedText)
             } else if let error = error {
                 self.transcribedText = "Error: \(error.localizedDescription)"
-                print("Recognition error: \(error.localizedDescription)")
-                self.restartRecording()  // Restart on error
+                self.stopRecording()  // Stop on error
             }
         }
     }
     
     func stopRecording() {
-        stopSpeakerCheck()
         audioEngine?.stop()
         audioEngine?.inputNode.removeTap(onBus: 0)
         request?.endAudio()
         recognitionTask?.cancel()
         isRecording = false
-        print("Stopped recording.")
-    }
-    
-    // Detect "Hey Mira" and capture the command following it
-    private func detectKeyword(in text: String) {
-        let keyword = "hey mira"
-        
-        if isListeningForCommand {
-            print("Listening for command after 'Hey Mira'")
-            resetSilenceTimer()  // Wait for pause in speech to process command
-        } else if let range = text.lowercased().range(of: keyword) {
-            isListeningForCommand = true
-            print("'Hey Mira' detected, capturing command...")
-            transcribedText = String(text[range.lowerBound...])
-            resetSilenceTimer()
-        }
-    }
-    
-    // Restart the timer to detect a pause in the user's speech
-    private func resetSilenceTimer() {
-        silenceTimer?.invalidate()
-        silenceTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
-            self?.processCommand()
-        }
-        print("Silence timer started.")
-    }
-    
-    // Process the command when the user stops speaking for 3 seconds
-    private func processCommand() {
-        print("Processing command...")
-        stopRecording()
-        
-        // Extract command text after "Hey Mira"
-        let keyword = "hey mira"
-        let text = transcribedText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        if let range = text.range(of: keyword) {
-            let command = text[range.upperBound...].trimmingCharacters(in: .whitespaces)
-            print("Command extracted: \(command)")
-            onCommandDetected?(String(command))
-        } else {
-            print("No command found after 'Hey Mira'.")
-            onCommandDetected?(transcribedText)
-        }
-        
-        isListeningForCommand = false
-        transcribedText = ""
-        
-        //  check the speaker and then determin restart or not 
-        checkSpeakerAndRestart()  // Replace direct restart with speaker check
-    }
-    
-    // Restart recording for continuous listening
-    private func restartRecording() {
-        print("Restarting recording...")
-        stopRecording()
-        startRecording()
-    }
-    
-    // Add this function to check speaker status and restart recording
-    private func checkSpeakerAndRestart() {
-        stopSpeakerCheck() // Stop existing timer if any
-        
-        speakerCheckTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            
-            if let player = self.audioPlayer, player.isPlaying {
-                print("Speaker is still playing, waiting...")
-            } else {
-                print("Speaker is not playing, restarting recording")
-                self.stopSpeakerCheck()
-                self.restartRecording()
-            }
-        }
-    }
-    
-    private func stopSpeakerCheck() {
-        speakerCheckTimer?.invalidate()
-        speakerCheckTimer = nil
     }
 }
