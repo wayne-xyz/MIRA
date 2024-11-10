@@ -6,6 +6,7 @@ class ConversationManager: NSObject, SFSpeechRecognizerDelegate,ObservableObject
 
 
     static let shared = ConversationManager()
+    static let REQUIREMENT_GPT_PROMPT="Here is a part of conversation context based on that, please provide me 5 key words to summarize the context"
 
     // creart a list of the string for listing keywords,will show on the ui
     public var keywords: [String] = []
@@ -80,7 +81,7 @@ class ConversationManager: NSObject, SFSpeechRecognizerDelegate,ObservableObject
     func stopRecording() {
         // Process any remaining context before stopping
         if !windowContext.isEmpty {
-            functionXXX(context: windowContext)
+            updateKeywords(context: windowContext)
         }
         
         audioEngine.stop()
@@ -110,7 +111,7 @@ class ConversationManager: NSObject, SFSpeechRecognizerDelegate,ObservableObject
     
     private func performPeriodicProcessing() {
         // Process the current window context
-        functionXXX(context: windowContext)
+        updateKeywords(context: windowContext)
         
         // Reset for next window
         windowContext = ""
@@ -120,13 +121,36 @@ class ConversationManager: NSObject, SFSpeechRecognizerDelegate,ObservableObject
 
     // private function to add keywords to the list
     private func addKeyword(keyword: String) {
+        print("Keywords: \(keywords),\(String(describing: currentTimeStamp))")
         keywords.append(keyword)
     }
     
-    private func functionXXX(context: String) {
-        // Implement your specific processing logic here
-        print("Processing context: \(context), time: \(Date().timeIntervalSince1970)")
+    private func currentTimeStamp() -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return dateFormatter.string(from: Date())
+    }
+    
+    private func updateKeywords(context: String) {
+        // Create DateFormatter for readable timestamp
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let timestamp = dateFormatter.string(from: Date())
+        
+        print("Processing context: \(context), time: \(timestamp)")
         // Add your custom logic here
+        NetworkManager.shared.sendChatGPTPrompt(context){ result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let response):
+                    self.addKeyword(keyword: response)
+                case .failure(let error):
+                    print("Error: \(error)")
+                }
+            }
+            
+        }
+        
     }
     
     // Handle authorization
