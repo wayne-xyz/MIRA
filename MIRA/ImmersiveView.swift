@@ -20,21 +20,30 @@ struct ImmersiveView: View {
 
     @State private var isPinching = false
     @State private var textEntity: ModelEntity?  // Store reference to text entity
+    @State var textResponse = ""
+    
 
     var body: some View {
         ZStack {
             RealityView { content in
+                let cubemap = CubemapLoader()
+                let cubemapEntity = cubemap.createSkyboxEntityByname(citynmae: "newyork")
+                content.add(cubemapEntity!)
+                
                 await setupScene(content: content)
             }
             .task {
                 await runHandTrackingSession()
                 detectPinchGesture()
             }
+   
+
+            
 
             // Centered response text display
             VStack {
                 Spacer()
-                Text(viewModel.responseText)
+                Text(speechRecognizer.transcribedText)
                     .font(.headline)
                     .padding()
                     .frame(width: 300) // Adjust width as needed
@@ -43,6 +52,12 @@ struct ImmersiveView: View {
                     .cornerRadius(10)
                     .multilineTextAlignment(.center)
                 Spacer()
+            }
+            .onAppear() {
+                if speechRecognizer.isRecording == false {
+                    speechRecognizer.startRecording()
+                }
+              
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)  // Center the text in the ZStack
         }
@@ -133,72 +148,31 @@ struct ImmersiveView: View {
                     
                     let distance = simd_distance(thumbPosition, indexPosition)
                     
-                    DispatchQueue.main.async {
-                        if distance < 0.02 {
-                            if !self.isPinching {
-                                self.isPinching = true
-                                viewModel.isListening.toggle()
-                                viewModel.buttonText = viewModel.isListening ? "Listening" : "MIRA"
-                                updateTextEntity()
-                                
-                                if viewModel.isListening {
-                                    startListening()
-                                } else {
-                                    stopListeningAndSendToChatGPT()
-                                }
-                            }
-                        } else if self.isPinching {
-                            self.isPinching = false
+                    
+                    if speechRecognizer.isRecording{
+                        print("distacne < 0.02")
+                        print(speechRecognizer.transcribedText)
+                        if !self.isPinching && distance<0.02 {
+                            self.isPinching = true
+                            
+                            speechRecognizer.stopRecording()
+                            print("stop recording")
+                            
+                            
                         }
+                    }else if self.isPinching && distance<0.02 {
+                        print("start recording")
+                        speechRecognizer.startRecording()
+                        print("Task started after delay")
+                    }
+
                     }
                 }
             }
         }
     }
 
-    private func updateTextEntity() {
-        guard let textEntity = textEntity else { return }
-        
-        let newTextMesh = MeshResource.generateText(
-            viewModel.buttonText,
-            extrusionDepth: 0.02,
-            font: .systemFont(ofSize: 0.1),
-            containerFrame: CGRect.zero,
-            alignment: .center,
-            lineBreakMode: .byTruncatingTail
-        )
-        textEntity.model?.mesh = newTextMesh
-    }
 
-    private func startListening() {
-        speechRecognizer.startRecording()
-        
-        speechRecognizer.$transcribedText
-            .receive(on: DispatchQueue.main)
-            .assign(to: &viewModel.$transcribedText)
-    }
-    
-    private func stopListeningAndSendToChatGPT() {
-        speechRecognizer.stopRecording()
-        
-        let transcribedText = viewModel.transcribedText
-        viewModel.transcribedText = ""  // Clear the text after stopping
-
-        NetworkManager.shared.sendChatGPTPrompt(transcribedText) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let response):
-                    viewModel.responseText = response
-                    print("ChatGPT Response: \(response)") // Print response to console
-                case .failure(let error):
-                    let errorMessage = "Error: \(error.localizedDescription)"
-                    viewModel.responseText = errorMessage
-                    print(errorMessage) // Print error to console
-                }
-            }
-        }
-    }
-}
 
 #Preview(immersionStyle: .full) {
     ImmersiveView()
