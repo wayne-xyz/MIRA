@@ -40,6 +40,23 @@ struct ImmersiveView: View {
                     devilEntity.playAnimation(animation.repeat())
                 }
             }
+            
+            if let robotEntity = try? await Entity(named: "Robot.usdz", in: realityKitContentBundle) {
+                content.add(robotEntity)
+                
+                // Scale down the model
+                robotEntity.scale = SIMD3<Float>(0.2, 0.2, 0.2) // Adjust scale as needed
+                
+                // Move the model to a new position
+                robotEntity.position = SIMD3<Float>(x: 0, y: -10, z: -100.0) // Adjust position as needed
+                
+                if let animation = robotEntity.availableAnimations.first {
+                    robotEntity.playAnimation(animation.repeat())
+                }
+            }
+
+            
+            
         }
     }
 }
