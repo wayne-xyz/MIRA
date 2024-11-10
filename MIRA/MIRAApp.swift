@@ -14,12 +14,12 @@ struct MIRAApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ChatGPTSpeechView() // Change to starting view (useful for testing)
+            ContentView() // Change to starting view (useful for testing)
                 .environment(appModel)
         }
 
         ImmersiveSpace(id: appModel.immersiveSpaceID) {
-            ContentView()
+            ImmersiveView()
                 .environment(appModel)
                 .onAppear {
                     appModel.immersiveSpaceState = .open

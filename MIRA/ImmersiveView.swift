@@ -1,90 +1,119 @@
-//
-//  ImmersiveView.swift
-//  MIRAv2
-//
-//  Created by Mehrad Faridan on 2024-11-09.
-//
-
 import SwiftUI
 import RealityKit
 import RealityKitContent
 import ARKit
+import Combine
 
 struct ImmersiveView: View {
     let handTracking = HandTrackingProvider()
     let session = ARKitSession()
     @State var box = ModelEntity()
     @State var sphere = ModelEntity()
+    @State var robotModelEntity: ModelEntity?
+    
+    // State variables for pinch detection
+    @State private var isPinching = false
+    @State private var pinchCounter = 0
 
     var body: some View {
-        RealityView { content in
-            if let robotEntity = try? await Entity(named: "Robot.usdz", in: realityKitContentBundle) {
-                content.add(robotEntity)
-                
-                // Scale down the model
-                robotEntity.scale = SIMD3<Float>(0.2, 0.2, 0.2) // Adjust scale as needed
-                
-                // Move the model to a new position
-                robotEntity.position = SIMD3<Float>(x: 0, y: -10, z: -100.0) // Adjust position as needed
-                
-                if let animation = robotEntity.availableAnimations.first {
-                    robotEntity.playAnimation(animation.repeat())
-                }
-            }
+        VStack {
+            // Display the pinch status
+            Text("Pinching: \(isPinching ? "true" : "false")")
+                .font(.largeTitle)
+                .foregroundColor(isPinching ? .green : .red)
+                .padding()
             
-            // Add the initial RealityKit content
-            let material = SimpleMaterial(color: .red, isMetallic: false)
-            self.sphere = ModelEntity(mesh: .generateSphere(radius: 0.05), materials: [material])
-            self.box = ModelEntity(mesh: .generateBox(size: 0.05), materials: [material])
+            RealityView { content in
+                // Define a no-bounce material for physical interactions
+                let noBounceMaterial = PhysicsMaterialResource.generate(
+                    friction: 1.0, restitution: 0.0
+                )
+                
+                // Ground Plane (Static Physics)
+                let groundPlane = ModelEntity()
+                let groundShape = ShapeResource.generateBox(size: SIMD3<Float>(10.0, 0.01, 10.0))
+                groundPlane.components[CollisionComponent.self] = CollisionComponent(shapes: [groundShape])
+                groundPlane.components[PhysicsBodyComponent.self] = PhysicsBodyComponent(
+                    shapes: [groundShape], mass: 0.0, material: noBounceMaterial, mode: .static
+                )
+                groundPlane.position = SIMD3<Float>(x: 0, y: 0, z: 0)
+                content.add(groundPlane)
 
-            content.add(box)
-            content.add(sphere)
-
-        } update: { content in
-
-            Task {
-                // Loop through all anchors provided by the handTracking provider
-                for await anchorUpdate in handTracking.anchorUpdates {
-                    let anchor = anchorUpdate.anchor
+                // Robot Entity (Dynamic Physics Body)
+                if let robotEntity = try? await Entity(named: "Robot.usdz", in: realityKitContentBundle) {
+                    let robotModelEntity = ModelEntity()
+                    robotModelEntity.addChild(robotEntity)
+                    content.add(robotModelEntity)
                     
-                    // Switch statement to differentiate between left and right hands
-                    switch anchor.chirality {
-                    case .left:
-                        if let handSkeleton = anchor.handSkeleton {
-                            let palm = handSkeleton.joint(.middleFingerKnuckle)
-                            // Get position of palm relative to origin
-                            let originFromWrist = anchor.originFromAnchorTransform
-                            let wristFromPalm = palm.anchorFromJointTransform
-                            let originFromTip = originFromWrist * wristFromPalm
-                            
-                            // Set the transformation matrix relative to the scene's origin
-                            sphere.setTransformMatrix(originFromTip, relativeTo: nil)
-                        }
+                    // Position robot and add physics body with no bounce
+                    robotModelEntity.position = SIMD3<Float>(x: 0, y: 1.5, z: -2.0)
+                    robotModelEntity.scale = SIMD3<Float>(0.5, 0.5, 0.5)
+                    self.robotModelEntity = robotModelEntity
+                    
+                    let boxShape = ShapeResource.generateBox(size: SIMD3<Float>(0.5, 0.5, 0.5))
+                    
+                    robotModelEntity.components.set(PhysicsBodyComponent(
+                        shapes: [boxShape], mass: 2.0, material: noBounceMaterial, mode: .dynamic
+                    ))
+                    
+                    robotModelEntity.collision = CollisionComponent(
+                        shapes: [boxShape],
+                        mode: .default,
+                        filter: CollisionFilter(group: .default, mask: .all)
+                    )
+                    
+                    if let animation = robotEntity.availableAnimations.first {
+                        robotEntity.playAnimation(animation.repeat())
+                    }
+                }
+                
+                // Sphere for left hand tracking
+                let material = SimpleMaterial(color: .red, isMetallic: false)
+                self.sphere = ModelEntity(mesh: .generateSphere(radius: 0.1), materials: [material])
+                content.add(sphere)
+                
+                // Box for right hand tracking
+                self.box = ModelEntity(mesh: .generateBox(size: SIMD3<Float>(0.1, 0.1, 0.1)), materials: [material])
+                content.add(box)
 
-                    case .right:
+            } update: { content in
+                Task {
+                    // Loop through all anchors provided by the handTracking provider
+                    for await anchorUpdate in handTracking.anchorUpdates {
+                        let anchor = anchorUpdate.anchor
+                        
+                        // Detect a pinch gesture
                         if let handSkeleton = anchor.handSkeleton {
-                            let palm = handSkeleton.joint(.middleFingerKnuckle)
-                            // Get position of palm relative to origin
-                            let originFromWrist = anchor.originFromAnchorTransform
-                            let wristFromPalm = palm.anchorFromJointTransform
-                            let originFromTip = originFromWrist * wristFromPalm
+                            // Get the positions of the thumb and index finger tips
+                            let thumbTipTransform = handSkeleton.joint(.thumbTip).anchorFromJointTransform
+                            let indexFingerTipTransform = handSkeleton.joint(.indexFingerTip).anchorFromJointTransform
                             
-                            // Set the transformation matrix relative to the scene's origin
-                            box.setTransformMatrix(originFromTip, relativeTo: nil)
+                            // Calculate the distance between thumb tip and index finger tip
+                            let distance = simd_distance(
+                                SIMD3<Float>(thumbTipTransform.columns.3.x, thumbTipTransform.columns.3.y, thumbTipTransform.columns.3.z),
+                                SIMD3<Float>(indexFingerTipTransform.columns.3.x, indexFingerTipTransform.columns.3.y, indexFingerTipTransform.columns.3.z)
+                            )
                             
-                            // Print the transformed position for debugging
-                            print("Box position:", box.transform.translation)
+                            // Fine-tuned threshold for pinch detection
+                            if distance < 0.03 { // Adjusted threshold for more precision
+                                if !isPinching {
+                                    // New pinch detected
+                                    isPinching = true
+                                    pinchCounter += 1
+                                    print("Pinch number: \(pinchCounter)")
+                                }
+                            } else {
+                                // Reset the pinch state when fingers are apart
+                                isPinching = false
+                            }
                         }
-
-                    @unknown default:
-                        print("Unknown error")
                     }
                 }
             }
-        }
-        // Run ARKit session asynchronously (off the main thread)
-        .task {
-            await runHandTrackingSession()
+            // Run ARKit session asynchronously (off the main thread)
+            .task {
+                await runHandTrackingSession()
+            }
         }
     }
 
